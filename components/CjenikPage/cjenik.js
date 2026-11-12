@@ -5,6 +5,7 @@ import {
   BlueLine,
   Naslov,
   Uvod,
+  Azurirano,
   Info,
   InfoText,
   Controls,
@@ -33,6 +34,7 @@ const TEXT = {
     aktualni: "Aktualni cjenik",
     arhivski: "Cjenik iz arhive",
     objavljeno: "Objavljeno",
+    zadnjeAzuriranje: "Zadnje ažuriranje cjenika",
     arhiva: "Arhiva (zadnjih 30 dana)",
     pretraga: "Pretraži proizvod",
     preuzmi: "Preuzmi CSV",
@@ -65,6 +67,7 @@ const TEXT = {
     aktualni: "Current price list",
     arhivski: "Archived price list",
     objavljeno: "Published",
+    zadnjeAzuriranje: "Price list last updated",
     arhiva: "Archive (last 30 days)",
     pretraga: "Search products",
     preuzmi: "Download CSV",
@@ -263,6 +266,11 @@ function Cjenik() {
       <BlueLine />
       <Naslov>{t.naslov}</Naslov>
       <Uvod>{t.uvod}</Uvod>
+      {latest && (
+        <Azurirano>
+          {t.zadnjeAzuriranje}: <strong>{formatDateTime(latest.publishedAt, locale, t)}</strong>
+        </Azurirano>
+      )}
 
       {indexError && <Poruka>{t.greska}</Poruka>}
       {!indexError && !index && (

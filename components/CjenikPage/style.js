@@ -166,6 +166,24 @@ export const Uvod = styled.p`
   }
 `;
 
+export const Azurirano = styled.p`
+  display: table;
+  margin: -20px auto 40px auto;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: #f5faff;
+  border: 1px solid #d6e7f2;
+  font-size: 15px;
+  text-align: center;
+  strong {
+    font-weight: 600;
+  }
+  @media only screen and (max-width: 750px) {
+    margin: -10px auto 25px auto;
+    font-size: 14px;
+  }
+`;
+
 export const Napomena = styled.p`
   margin: 16px 0 0 0;
   font-size: 13px;
