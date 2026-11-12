@@ -166,6 +166,11 @@ const Header = ({ siteTitle, novostiNaslovi, oglasiNaslovi }) => {
                       {locale === "hr" ? "Novosti" : "News"}
                     </Link>
                   </div>
+                  <div>
+                    <Link className="navLink" href="/cjenik">
+                      {locale === "hr" ? "Cjenik" : "Price list"}
+                    </Link>
+                  </div>
                   <div className="navLink borderNav"></div>
                   <div className="dropdown">
                     <div className="dropdown-content">

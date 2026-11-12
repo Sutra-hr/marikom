@@ -9,3 +9,7 @@
 
 [context.production]
   command = "npm run build && cp ./custom-headers/_productionHeaders ./.next/_headers"
+# Cjenik (sidrene cijene): funkcije u netlify/functions, adrese su zadane u samim funkcijama.
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"

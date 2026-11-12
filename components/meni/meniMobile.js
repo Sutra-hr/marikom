@@ -60,6 +60,7 @@ const MeniMobile = ({
           </Link>
           <Link href="/kontakt">{locale === "hr" ? "Kontakt" : "Contact"}</Link>
           <Link href="/novosti">{locale === "hr" ? "Novosti" : "News"}</Link>
+          <Link href="/cjenik">{locale === "hr" ? "Cjenik" : "Price list"}</Link>
           <SwitcherWrap>
             <LanguageSwitcher
               closeMenu={closeMenu}

@@ -44,6 +44,18 @@ export const getServerSideProps = async ({ res }) => {
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
+  <url>
+    <loc>https://www.marikomerc.hr/cjenik</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.marikomerc.hr/en/cjenik</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
     </urlset>
   `;
 
