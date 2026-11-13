@@ -210,7 +210,11 @@ export function mapirajStavku(stavka) {
   const mpc = akcija ? akcijska : redovna;
   const sidrena = broj(pick(stavka, "SidrenaCijena"));
   const dostupno = daNe(pick(stavka, "Dostupno"));
-  const brand = String(pick(stavka, "Brand") ?? "").trim();
+  const brandSirovo = String(pick(stavka, "Brand") ?? "").trim();
+  // VENIO za artikle bez marke šalje "NIJE RELEVANTNO"; to nije marka.
+  const brand = /^nije relevantno$/i.test(brandSirovo) ? "" : brandSirovo;
+  // VENIO (izvan dokumentacije v1.4) ponekad šalje gotovu cijenu za jedinicu mjere.
+  const venioCijenaJm = broj(pick(stavka, "CijenaPoJediniciMjere"));
 
   const greske = [];
   if (!sifra) greske.push("nema šifre");
@@ -221,7 +225,9 @@ export function mapirajStavku(stavka) {
   // Cijena za jedinicu mjere: za artikle na kg ili l jednaka je cijeni.
   // Za komadne artikle treba neto masa pakiranja, koju API (za sada) ne daje.
   let cijenaJm = "";
-  if (mpc !== null && (jm === "kg" || jm === "l")) {
+  if (venioCijenaJm !== null && venioCijenaJm > 0) {
+    cijenaJm = cijena(venioCijenaJm);
+  } else if (mpc !== null && (jm === "kg" || jm === "l")) {
     cijenaJm = cijena(mpc);
   } else if (!akcija) {
     upozorenja.push("cijena_za_jedinicu_mjere");

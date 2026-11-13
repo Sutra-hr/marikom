@@ -28,7 +28,9 @@ export function venioPostavke(env = process.env) {
 export function venioUrl(baseUrl, datum, sifraSkladista = VENIO_SKLADISTE) {
   return (
     `${baseUrl}/MaloprodajaCjenik/CjenikWebNovo/Skladiste/${encodeURIComponent(sifraSkladista)}/${datum}` +
-    `?grupaArtiklId=21&grupaNaziv=Brand`
+    // sifraSkladistaZaDostupnost=V001: uputa VENIO-a (mail 13. 11. 2026.).
+    // grupaArtiklId=21&grupaNaziv=Brand: Notion uputa; bez toga VENIO ne šalje polje "Brand".
+    `?sifraSkladistaZaDostupnost=V001&grupaArtiklId=21&grupaNaziv=Brand`
   );
 }
 
