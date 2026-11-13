@@ -59,6 +59,7 @@ export const RETENTION_DAYS = 31;
 const MAX_UDIO_NEISPRAVNIH = 0.1;
 
 const STANJE_KEY = "stanje.json";
+const POKUSAJ_KEY = "zadnji-pokusaj.json";
 const objavaKey = (broj) => `objave/${String(broj).padStart(6, "0")}.csv`;
 
 // ---------------------------------------------------------------------------
@@ -391,4 +392,32 @@ export async function procitajArhivu(store, filename) {
   if (!objava) return null;
   const csv = await store.get(objavaKey(objava.broj), { type: "text" });
   return csv ? { csv, filename: objava.filename } : null;
+}
+
+// ---------------------------------------------------------------------------
+// Praćenje: je li današnji cjenik objavljen (Notion: upozorenje ako ga nema do 8:00).
+
+// Zapis zadnjeg pokušaja sinkronizacije (uspjeh ili greška), bez pristupnih podataka.
+export async function zapisiPokusaj(store, { ok, poruka, now = new Date() }) {
+  await store.setJSON(POKUSAJ_KEY, { ok, poruka: String(poruka || "").slice(0, 300), vrijeme: now.toISOString() });
+}
+
+export const ROK_SAT = 8;
+
+export async function stanjeDanas(store, now = new Date()) {
+  const stanje = await ucitajStanje(store);
+  const zadnja = stanje.objave[stanje.objave.length - 1] || null;
+  const pokusaj = await store.get(POKUSAJ_KEY, { type: "json" });
+  const danas = zagrebDatum(now);
+  // Objava "danas" = objava s današnjim datumom cjenika ili objavljena danas po Zagrebu.
+  const objavljenoDanas = Boolean(zadnja && (zadnja.datum === danas || zagrebDatum(new Date(zadnja.publishedAt)) === danas));
+  const prijeRoka = Number(zagrebParts(now).hh) < ROK_SAT;
+  return {
+    ok: objavljenoDanas || prijeRoka,
+    objavljenoDanas,
+    danas,
+    rok: `${String(ROK_SAT).padStart(2, "0")}:00`,
+    zadnjaObjava: zadnja ? { filename: zadnja.filename, publishedAt: zadnja.publishedAt, artikala: zadnja.artikala } : null,
+    zadnjiPokusaj: pokusaj || null,
+  };
 }
