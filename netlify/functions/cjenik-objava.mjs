@@ -62,7 +62,7 @@ export function renderPage({ poslovnica, latest, archive }, generatedAt = new Da
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Objava cjenika | Marikomerc</title>
   <meta name="description" content="Dnevni cjenik Marikomerc maloprodaje u CSV formatu, s arhivom zadnjih 30 dana.">
-  <link rel="canonical" href="https://www.marikomerc.hr/objava-cjenika">
+  <link rel="canonical" href="https://marikomerc.hr/objava-cjenika">
   <link rel="alternate" type="application/json" href="/cjenici/popis.json" title="Popis cjenika (JSON)">
   <style>
     :root { color-scheme: light; }
