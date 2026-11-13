@@ -19,7 +19,7 @@ import {
 
 // import Logo from "../../../svg/perlalogo.svg";
 import Image from "next/image";
-import Lottie, { useLottie } from "lottie-react";
+import dynamic from "next/dynamic";
 
 import GreenMark from "../../../svg/greenMark.svg";
 import Button from "../../buttonBlue/Button.js";
@@ -32,6 +32,8 @@ import ReceptiLottie from "./ReceptiLottie.js";
 import { useRouter } from "next/router.js";
 import en from "../../../locales/en.json";
 import hr from "../../../locales/hr.json";
+
+const Lottie = dynamic(() => import("lottie-react"), { ssr: false });
 
 function HorecaHero() {
   // const [style2, setStyle2] = useState({});
@@ -84,9 +86,7 @@ function HorecaHero() {
       initialSegment: [0, 68],
     };
 
-    const { View } = useLottie(options, style);
-
-    return View;
+    return <Lottie {...options} style={style} />;
   };
   const ReceptiAnimacija = () => {
     const options = {
@@ -100,9 +100,7 @@ function HorecaHero() {
         id: "lottie-svg-id",
       },
     };
-    const { View } = useLottie(options, style2);
-
-    return View;
+    return <Lottie {...options} style={style2} />;
   };
   const { ref, inView, entry } = useInView({
     /* Optional options */

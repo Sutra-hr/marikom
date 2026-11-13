@@ -23,7 +23,7 @@ import {
 } from "./style.js";
 
 import Image from "next/image";
-import Lottie, { useLottie } from "lottie-react";
+import dynamic from "next/dynamic";
 import { useScrollPercentage } from "react-scroll-percentage";
 
 import GreenMark from "../../svg/greenMark.svg";
@@ -38,6 +38,9 @@ import { useRouter } from "next/router.js";
 import en from "../../locales/en.json";
 import hr from "../../locales/hr.json";
 import AppSection from "./appSection.js";
+
+const Lottie = dynamic(() => import("lottie-react"), { ssr: false });
+
 function PerlaPrviDio() {
   // const [style2, setStyle2] = useState({});
   const size = useWindowSize();
@@ -82,9 +85,7 @@ function PerlaPrviDio() {
       initialSegment: [1, 68],
     };
 
-    const { View } = useLottie(options, style);
-
-    return View;
+    return <Lottie {...options} style={style} />;
   };
   const ReceptiAnimacija = () => {
     const options = {
@@ -98,9 +99,7 @@ function PerlaPrviDio() {
         id: "lottie-svg-id",
       },
     };
-    const { View } = useLottie(options, style2);
-
-    return View;
+    return <Lottie {...options} style={style2} />;
   };
   const { ref, inView, entry } = useInView({
     /* Optional options */

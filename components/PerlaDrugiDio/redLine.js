@@ -7,8 +7,10 @@ import useWindowSize from "../helper/usewindowsize.js";
 import { useRouter } from "next/router.js";
 
 import { useInView } from "react-intersection-observer";
-import { useLottie } from "lottie-react";
+import dynamic from "next/dynamic";
 import animacija from "./perlaAnimacija.js";
+
+const Lottie = dynamic(() => import("lottie-react"), { ssr: false });
 
 function RedLineComp() {
   const style = {
@@ -22,9 +24,7 @@ function RedLineComp() {
       initialSegment: [0, 100],
     };
 
-    const { View } = useLottie(options, style);
-
-    return View;
+    return <Lottie {...options} style={style} />;
   };
 
   const { ref, inView, entry } = useInView({

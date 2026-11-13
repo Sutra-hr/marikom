@@ -34,7 +34,6 @@ import { useRouter } from "next/router.js";
 import en from "../../locales/en.json";
 import hr from "../../locales/hr.json";
 import { useInView } from "react-intersection-observer";
-import { useLottie } from "lottie-react";
 import animacija from "./perlaAnimacija.js";
 import Link from "next/link.js";
 import RedLineComp from "./redLine.js";
