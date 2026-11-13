@@ -1,7 +1,7 @@
 import React, { useContext, useState, useEffect } from "react";
 import Link from "next/link";
 import { Switcher } from "./style.js";
-import { Context } from "../../pages/index.js";
+// import { Context } from "../../pages/index.js";
 import { useRouter } from "next/router";
 import AppContext from "../../components/AppContext.js";
 import slugify from "slugify";
@@ -80,17 +80,17 @@ function LanguageSwitcher({
                   locale: "eng",
                   strict: true,
                   lower: true,
-                }
+                },
               ) +
                 `-id-${naslov.node.id}` ===
               getSlug
             : slugify(
                 naslov.node.title,
 
-                { locale: "hrv", strict: true, lower: true }
+                { locale: "hrv", strict: true, lower: true },
               ) +
                 `-id-${naslov.node.id}` ===
-              getSlug
+              getSlug,
         );
 
         const matchingUrl =
@@ -98,12 +98,12 @@ function LanguageSwitcher({
             ? slugify(
                 getTranslationRouteForNews[0].node.title,
 
-                { locale: "eng", strict: true, lower: true }
+                { locale: "eng", strict: true, lower: true },
               ) + `-id-${getTranslationRouteForNews[0].node.id}`
             : slugify(
                 getTranslationRouteForNews[0].node.title,
 
-                { locale: "hrv", strict: true, lower: true }
+                { locale: "hrv", strict: true, lower: true },
               ) + `-id-${getTranslationRouteForNews[0].node.id}`;
         return router.push(matchingUrl, undefined, { locale: lang });
       }
@@ -119,7 +119,7 @@ function LanguageSwitcher({
                 {
                   locale: "eng",
                   strict: true,
-                }
+                },
               ) +
                 `-id-${naslov.node.id}` ===
               getSlug
@@ -128,10 +128,10 @@ function LanguageSwitcher({
                 {
                   locale: "hrv",
                   strict: true,
-                }
+                },
               ) +
                 `-id-${naslov.node.id}` ===
-              getSlug
+              getSlug,
         );
 
         const matchingUrl =
@@ -141,14 +141,14 @@ function LanguageSwitcher({
                   .toLowerCase()
                   .split(" ")
                   .join("-"),
-                { locale: "eng", strict: true }
+                { locale: "eng", strict: true },
               ) + `-id-${getTranslationRouteForNews[0].node.id}`
             : slugify(
                 getTranslationRouteForNews[0].node.novosti.naslov
                   .toLowerCase()
                   .split(" ")
                   .join("-"),
-                { locale: "hrv", strict: true }
+                { locale: "hrv", strict: true },
               ) + `-id-${getTranslationRouteForNews[0].node.id}`;
         return router.push(matchingUrl, undefined, { locale: lang });
       }
