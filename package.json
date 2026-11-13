@@ -9,6 +9,7 @@
   "dependencies": {
     "@devnomic/marquee": "^1.0.3",
     "@formspark/use-formspark": "^0.1.39",
+    "@netlify/blobs": "^10.7.13",
     "@react-spring/web": "^9.6.1",
     "@steveeeie/react-page-transition": "^1.2.1",
     "@svgr/webpack": "^6.1.2",
