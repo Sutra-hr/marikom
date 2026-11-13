@@ -243,10 +243,6 @@ function FooterSection() {
           <a href={isHR ? "/uvjeti-koristenja" : "/en/uvjeti-koristenja"}>
             <span>{isHR ? "Uvjeti korištenja" : "Terms of Use"}</span>
           </a>
-          <span className="footer-legal__sep">•</span>
-          <a href={isHR ? "/cjenik" : "/en/cjenik"}>
-            <span>{isHR ? "Cjenik" : "Price list"}</span>
-          </a>
         </nav>
 
         <Copy>

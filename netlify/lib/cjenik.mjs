@@ -7,26 +7,46 @@ import { createHash } from "node:crypto";
 
 export const STORE_NAME = "marikomerc-cjenik";
 
-export const POSLOVNICA = {
-  code: "T003",
+// Šifra skladišta u VENIO-u (dio adrese API poziva).
+export const VENIO_SKLADISTE = "T003";
+
+// Podaci poslovnice za naziv datoteke. Prema Notion uputi dolaze iz Netlify
+// varijabli (nazivi su preuzeti iz upute doslovno, iako počinju s DIMARIS_):
+//   DIMARIS_STORE_TYPE      oblik prodajnog objekta
+//   DIMARIS_STORE_ADDRESS   adresa prodajnog objekta
+//   DIMARIS_STORE_CODE      oznaka prodajnog objekta
+//   DIMARIS_STORAGE_NUMBER  broj pohrane (ako nije postavljen, koristi se redni broj objave)
+const ZADANA_POSLOVNICA = {
   vrsta: "prodavaonica",
-  name: "Marikomerc Poličnik",
   address: "Grabi 54, 23241 Poličnik",
+  code: "T003",
+  brojPohrane: "",
 };
 
-export const CSV_SEPARATOR = ";";
+export function poslovnica(env = process.env) {
+  const v = (name, fallback) => String(env[name] ?? "").trim() || fallback;
+  return {
+    name: "Marikomerc Poličnik",
+    vrsta: v("DIMARIS_STORE_TYPE", ZADANA_POSLOVNICA.vrsta),
+    address: v("DIMARIS_STORE_ADDRESS", ZADANA_POSLOVNICA.address),
+    code: v("DIMARIS_STORE_CODE", ZADANA_POSLOVNICA.code),
+    brojPohrane: v("DIMARIS_STORAGE_NUMBER", ZADANA_POSLOVNICA.brojPohrane),
+  };
+}
+
+// CSV prema Notion uputi: UTF-8, zarez, decimalna točka, 11 stupaca ovim redom.
+export const CSV_SEPARATOR = ",";
 
 export const CSV_HEADER = [
-  "sifra_artikla",
-  "naziv_artikla",
+  "naziv",
+  "sifra",
   "marka",
   "jedinica_mjere",
   "cijena_za_jedinicu_mjere",
   "maloprodajna_cijena",
-  "poseban_oblik_prodaje",
+  "posebni_oblik_prodaje",
   "naziv_posebnog_oblika_prodaje",
   "sidrena_cijena",
-  "datum_sidrene_cijene",
   "barkod",
   "dostupnost",
 ];
@@ -77,7 +97,8 @@ export function zagrebStamp(date = new Date()) {
 }
 
 // ---------------------------------------------------------------------------
-// Naziv datoteke: {vrsta}_{adresa}_{oznaka}_{broj-pohrane}_{YYYYMMDDTHHmmss+ZZZZ}.csv
+// Naziv datoteke: {oblik}_{adresa}_{oznaka}_{broj-pohrane}_{YYYYMMDDTHHmmss+ZZZZ}.csv
+// Razmaci i nedopušteni znakovi unutar dijela postaju crtica (Notion uputa).
 
 function ascii(text) {
   return String(text)
@@ -87,12 +108,16 @@ function ascii(text) {
     .replace(/Đ/g, "D");
 }
 
-export function nazivDatoteke({ broj, date }) {
-  const adresa = ascii(POSLOVNICA.address)
-    .replace(/[^A-Za-z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "");
-  const brojPohrane = String(broj).padStart(6, "0");
-  return `${POSLOVNICA.vrsta}_${adresa}_${POSLOVNICA.code}_${brojPohrane}_${zagrebStamp(date)}.csv`;
+function dioNaziva(text) {
+  return ascii(text)
+    .replace(/[^A-Za-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+export function nazivDatoteke({ broj, date, env = process.env }) {
+  const p = poslovnica(env);
+  const brojPohrane = p.brojPohrane || String(broj).padStart(6, "0");
+  return [p.vrsta, p.address, p.code, brojPohrane].map(dioNaziva).join("_") + `_${zagrebStamp(date)}.csv`;
 }
 
 // ---------------------------------------------------------------------------
@@ -112,10 +137,6 @@ function pick(obj, ...names) {
   return undefined;
 }
 
-function hasField(obj, name) {
-  return obj && typeof obj === "object" && Object.keys(obj).some((key) => key.toLowerCase() === name.toLowerCase());
-}
-
 function broj(value) {
   if (value === null || value === undefined || value === "") return null;
   const n = typeof value === "number" ? value : Number(String(value).replace(",", "."));
@@ -124,12 +145,6 @@ function broj(value) {
 
 function cijena(n) {
   return n === null ? "" : n.toFixed(2);
-}
-
-function datum(value) {
-  if (!value) return "";
-  const match = /^(\d{4}-\d{2}-\d{2})/.exec(String(value));
-  return match ? match[1] : "";
 }
 
 function daNe(value) {
@@ -161,7 +176,7 @@ function jedinica(code) {
 }
 
 // Pronađi stavke grupe u kojoj je skladište T003.
-export function stavkeZaPoslovnicu(json, sifraSkladista = POSLOVNICA.code) {
+export function stavkeZaPoslovnicu(json, sifraSkladista = VENIO_SKLADISTE) {
   const grupe = Array.isArray(json) ? json : pick(json, "WebCjenikGrupa", "Grupe", "Data", "Result") || [];
   if (!Array.isArray(grupe)) {
     throw new Error("VENIO odgovor nije niz grupa.");
@@ -213,17 +228,19 @@ export function mapirajStavku(stavka) {
   if (sidrena === null) upozorenja.push("sidrena_cijena");
   if (!jm) upozorenja.push("jedinica_mjere");
 
+  if (!brand) upozorenja.push("marka");
+
+  // Marka se ne izmišlja: ako je VENIO ne pošalje, ostaje prazna.
   const red = {
-    sifra_artikla: sifra,
-    naziv_artikla: naziv,
-    marka: brand || "Ostalo",
+    naziv,
+    sifra,
+    marka: brand,
     jedinica_mjere: jm,
     cijena_za_jedinicu_mjere: cijenaJm,
     maloprodajna_cijena: cijena(mpc),
-    poseban_oblik_prodaje: akcija ? "DA" : "NE",
+    posebni_oblik_prodaje: akcija ? "DA" : "NE",
     naziv_posebnog_oblika_prodaje: akcija ? "Akcija" : "",
     sidrena_cijena: cijena(sidrena),
-    datum_sidrene_cijene: sidrena === null ? "" : datum(pick(stavka, "SidrenaCijenaDatum")),
     barkod: String(pick(stavka, "ArtiklBarkod") ?? "").trim(),
     dostupnost: dostupno ? "DOSTUPNO" : "NEDOSTUPNO",
   };
@@ -237,17 +254,13 @@ export function pripremiCjenik(json) {
   if (stavke.length === 0) {
     throw new Error("VENIO je vratio prazan cjenik.");
   }
-  if (!stavke.some((stavka) => hasField(stavka, "Brand"))) {
-    throw new Error("VENIO odgovor nema polje Brand (provjeriti grupaArtiklId=21&grupaNaziv=Brand).");
-  }
-
   const redovi = [];
   const neispravni = [];
   const upozorenja = {};
   for (const stavka of stavke) {
     const { red, greske, upozorenja: u } = mapirajStavku(stavka);
     if (greske.length > 0) {
-      neispravni.push({ sifra: red.sifra_artikla, greske });
+      neispravni.push({ sifra: red.sifra, greske });
       continue;
     }
     for (const polje of u) upozorenja[polje] = (upozorenja[polje] || 0) + 1;
@@ -259,7 +272,7 @@ export function pripremiCjenik(json) {
     throw new Error(`Previše neispravnih artikala (${neispravni.length} od ${stavke.length}). ${primjeri.join("; ")}`);
   }
 
-  redovi.sort((a, b) => a.naziv_artikla.localeCompare(b.naziv_artikla, "hr"));
+  redovi.sort((a, b) => a.naziv.localeCompare(b.naziv, "hr"));
 
   return {
     redovi,
@@ -272,7 +285,7 @@ export function pripremiCjenik(json) {
 
 function csvPolje(value) {
   const text = String(value ?? "");
-  return /[";\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+  return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 
 export function uCsv(redovi) {
@@ -295,7 +308,7 @@ async function ucitajStanje(store) {
 
 // Dohvati, pretvori i objavi. `dohvatiJson(datum)` vraća VENIO JSON.
 // Na bilo kakvu grešku baca iznimku i NE dira zadnji ispravni cjenik.
-export async function sinkroniziraj({ store, dohvatiJson, now = new Date() }) {
+export async function sinkroniziraj({ store, dohvatiJson, now = new Date(), env = process.env }) {
   const datumCjenika = zagrebDatum(now);
   const json = await dohvatiJson(datumCjenika);
   const { redovi, izvjestaj } = pripremiCjenik(json);
@@ -313,7 +326,7 @@ export async function sinkroniziraj({ store, dohvatiJson, now = new Date() }) {
   const broj = (stanje.zadnjiBroj || 0) + 1;
   const objava = {
     broj,
-    filename: nazivDatoteke({ broj, date: now }),
+    filename: nazivDatoteke({ broj, date: now, env }),
     datum: datumCjenika,
     publishedAt: now.toISOString(),
     hash: csvHash,
@@ -353,11 +366,12 @@ function javnaObjava(o) {
   };
 }
 
-export async function popis(store) {
+export async function popis(store, env = process.env) {
   const stanje = await ucitajStanje(store);
   const objave = [...stanje.objave].reverse().map(javnaObjava);
+  const { name, vrsta, address, code } = poslovnica(env);
   return {
-    poslovnica: POSLOVNICA,
+    poslovnica: { name, vrsta, address, code },
     latest: objave[0] ? { ...objave[0], aktualniUrl: "/cjenici/aktualni.csv" } : null,
     archive: objave,
   };

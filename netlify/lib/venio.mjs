@@ -1,29 +1,31 @@
 // Poziv VENIO API-ja (samo sa servera; pristupni podaci su Netlify env varijable).
+// Nazivi varijabli su doslovno iz Notion upute:
 //
-// MARIKOMERC_VENIO_URL       npr. https://<host>:<port>  (bez završnog /)
-// MARIKOMERC_VENIO_KORISNIK  Basic Auth korisnik
-// MARIKOMERC_VENIO_LOZINKA   Basic Auth lozinka
-// MARIKOMERC_VENIO_DOZVOLI_HTTP=1  samo ako je svjesno dogovoreno slanje preko http://
+// VENIO_API_BASE_URL   npr. http://185.168.118.6:54777  (bez završnog /)
+// VENIO_API_USERNAME   Basic Auth korisnik
+// VENIO_API_PASSWORD   Basic Auth lozinka
+// VENIO_API_ALLOW_HTTP=1  samo ako je svjesno dogovoreno slanje preko http://
+//                         (VENIO trenutno nema HTTPS)
 
-import { POSLOVNICA } from "./cjenik.mjs";
+import { VENIO_SKLADISTE } from "./cjenik.mjs";
 
 const TIMEOUT_MS = 60_000;
 
 export function venioPostavke(env = process.env) {
-  const baseUrl = String(env.MARIKOMERC_VENIO_URL || "").trim().replace(/\/+$/, "");
-  const korisnik = String(env.MARIKOMERC_VENIO_KORISNIK || "");
-  const lozinka = String(env.MARIKOMERC_VENIO_LOZINKA || "");
+  const baseUrl = String(env.VENIO_API_BASE_URL || "").trim().replace(/\/+$/, "");
+  const korisnik = String(env.VENIO_API_USERNAME || "");
+  const lozinka = String(env.VENIO_API_PASSWORD || "");
 
   if (!baseUrl || !korisnik || !lozinka) {
-    throw new Error("VENIO nije postavljen (MARIKOMERC_VENIO_URL, _KORISNIK, _LOZINKA).");
+    throw new Error("VENIO nije postavljen (VENIO_API_BASE_URL, VENIO_API_USERNAME, VENIO_API_PASSWORD).");
   }
-  if (!baseUrl.startsWith("https://") && env.MARIKOMERC_VENIO_DOZVOLI_HTTP !== "1") {
+  if (!baseUrl.startsWith("https://") && env.VENIO_API_ALLOW_HTTP !== "1") {
     throw new Error("VENIO adresa nije https://; lozinka se ne šalje nezaštićeno.");
   }
   return { baseUrl, korisnik, lozinka };
 }
 
-export function venioUrl(baseUrl, datum, sifraSkladista = POSLOVNICA.code) {
+export function venioUrl(baseUrl, datum, sifraSkladista = VENIO_SKLADISTE) {
   return (
     `${baseUrl}/MaloprodajaCjenik/CjenikWebNovo/Skladiste/${encodeURIComponent(sifraSkladista)}/${datum}` +
     `?grupaArtiklId=21&grupaNaziv=Brand`
@@ -45,7 +47,9 @@ export async function dohvatiVenioCjenik(datum, env = process.env) {
   }
 
   if (!response.ok) {
-    throw new Error(`VENIO je vratio HTTP ${response.status}.`);
+    // Dokumentacija v1.4 (8.): kod 400 zabilježiti tijelo odgovora (kratko, bez pristupnih podataka).
+    const poruka = (await response.text().catch(() => "")).slice(0, 200).replace(/\s+/g, " ").trim();
+    throw new Error(`VENIO je vratio HTTP ${response.status}.${poruka ? ` ${poruka}` : ""}`);
   }
 
   const text = await response.text();

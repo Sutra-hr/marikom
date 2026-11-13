@@ -1,10 +1,13 @@
-// Svako jutro dohvaća cjenik iz VENIO-a i objavljuje ga.
-// Netlify raspored je u UTC: 05:00 i 05:30 UTC = 06:00 i 06:30 zimi, 07:00 i 07:30 ljeti
-// (uvijek prije 8:00 po Zagrebu). Drugi pokušaj ne objavljuje ponovno ako je cjenik isti.
+// Svakih 15 minuta dohvaća cjenik iz VENIO-a (Notion uputa).
+// - Prva uspješna provjera u danu (po Zagrebu) objavljuje cjenik za taj dan, dakle
+//   daleko prije 8:00, ako VENIO tada odgovara.
+// - Kasnije provjere istog dana objavljuju novu verziju (i arhivsku kopiju) samo ako
+//   se sadržaj promijenio; isti sadržaj se preskače.
+// - Greška nikad ne dira zadnji ispravni cjenik.
 import { pokreni } from "../lib/pokreni.mjs";
 
 export const config = {
-  schedule: "0,30 5 * * *",
+  schedule: "*/15 * * * *",
 };
 
 export default async function handler() {
