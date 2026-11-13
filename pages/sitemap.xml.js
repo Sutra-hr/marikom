@@ -3,7 +3,7 @@ import React from "react";
 const Sitemap = () => {};
 
 export const getServerSideProps = async ({ res }) => {
-  const baseUrl = "https://www.marikomerc.hr";
+  const baseUrl = "https://marikomerc.hr";
   // Cjenik (NN 101/26) se objavljuje svaki dan; stranica za robote nema poveznica sa weba,
   // pa je sitemap jedini put kojim je tražilice nađu.
   const danas = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Zagreb" }).format(new Date());
@@ -12,37 +12,37 @@ export const getServerSideProps = async ({ res }) => {
     <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
    
       <url>
-      <loc>https://www.marikomerc.hr</loc>
+      <loc>https://marikomerc.hr</loc>
       <lastmod>2022-06-01</lastmod>
       <changefreq>daily</changefreq>
       <priority>1.0</priority>
     </url>
        <url>
-      <loc>https://www.marikomerc.hr/en</loc>
+      <loc>https://marikomerc.hr/en</loc>
       <lastmod>2022-06-01</lastmod>
       <changefreq>daily</changefreq>
       <priority>1.0</priority>
     </url>
      <url>
-      <loc>https://www.marikomerc.hr/karijere</loc>
+      <loc>https://marikomerc.hr/karijere</loc>
       <lastmod>2022-06-01</lastmod>
       <changefreq>daily</changefreq>
       <priority>1.0</priority>
     </url>
      <url>
-      <loc>https://www.marikomerc.hr/en/karijere</loc>
+      <loc>https://marikomerc.hr/en/karijere</loc>
       <lastmod>2022-06-01</lastmod>
       <changefreq>daily</changefreq>
       <priority>1.0</priority>
     </url>
     <url>
-    <loc>https://www.marikomerc.hr/novosti</loc>
+    <loc>https://marikomerc.hr/novosti</loc>
     <lastmod>2022-10-10</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
    <url>
-    <loc>https://www.marikomerc.hr/en/novosti</loc>
+    <loc>https://marikomerc.hr/en/novosti</loc>
     <lastmod>2022-10-10</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
