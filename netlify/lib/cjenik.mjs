@@ -16,7 +16,9 @@ export const VENIO_SKLADISTE = "T003";
 //   DIMARIS_STORE_ADDRESS   adresa prodajnog objekta
 //   DIMARIS_STORE_CODE      oznaka prodajnog objekta
 //   DIMARIS_STORAGE_NUMBER  broj pohrane (ako nije postavljen, koristi se redni broj objave)
+//   MARIKOMERC_OIB          OIB trgovca na početku naziva (NN 132/2026, čl. 6.3)
 const ZADANA_POSLOVNICA = {
+  oib: "02359254184",
   vrsta: "prodavaonica",
   address: "Grabi 54, 23241 Poličnik",
   code: "T003",
@@ -27,6 +29,7 @@ export function poslovnica(env = process.env) {
   const v = (name, fallback) => String(env[name] ?? "").trim() || fallback;
   return {
     name: "Marikomerc Poličnik",
+    oib: v("MARIKOMERC_OIB", ZADANA_POSLOVNICA.oib),
     vrsta: v("DIMARIS_STORE_TYPE", ZADANA_POSLOVNICA.vrsta),
     address: v("DIMARIS_STORE_ADDRESS", ZADANA_POSLOVNICA.address),
     code: v("DIMARIS_STORE_CODE", ZADANA_POSLOVNICA.code),
@@ -34,21 +37,22 @@ export function poslovnica(env = process.env) {
   };
 }
 
-// CSV prema Notion uputi: UTF-8, zarez, decimalna točka, 11 stupaca ovim redom.
-export const CSV_SEPARATOR = ",";
+// CSV po Pravilniku o načinu objave cjenika (NN 132/2026): UTF-8, točka-zarez,
+// decimalna točka, 11 stupaca ovim redom (isto zaglavlje kao diMaris).
+export const CSV_SEPARATOR = ";";
 
 export const CSV_HEADER = [
   "naziv",
   "sifra",
   "marka",
+  "neto_kolicina",
   "jedinica_mjere",
-  "cijena_za_jedinicu_mjere",
   "maloprodajna_cijena",
   "posebni_oblik_prodaje",
-  "naziv_posebnog_oblika_prodaje",
-  "sidrena_cijena",
+  "cijena_za_jedinicu_mjere",
   "barkod",
-  "dostupnost",
+  "ean_barkod",
+  "bazna_cijena",
 ];
 
 // Objave se čuvaju najmanje 30 dana; brišemo tek starije od 31 dan.
@@ -91,15 +95,17 @@ export function zagrebDatum(date = new Date()) {
   return `${p.y}-${p.m}-${p.d}`;
 }
 
-// "20261113T063000+0100" (za naziv datoteke)
+// "20261113_0630" (za naziv datoteke, NN 132/2026 čl. 6.3: GGGGMMDD_SSMM, po Zagrebu)
 export function zagrebStamp(date = new Date()) {
   const p = zagrebParts(date);
-  return `${p.y}${p.m}${p.d}T${p.hh}${p.mm}${p.ss}${p.offset}`;
+  return `${p.y}${p.m}${p.d}_${p.hh}${p.mm}`;
 }
 
 // ---------------------------------------------------------------------------
-// Naziv datoteke: {oblik}_{adresa}_{oznaka}_{broj-pohrane}_{YYYYMMDDTHHmmss+ZZZZ}.csv
-// Razmaci i nedopušteni znakovi unutar dijela postaju crtica (Notion uputa).
+// Naziv datoteke (NN 132/2026, čl. 6.3), kao diMaris:
+//   {OIB}_{VRSTA}_{adresa}_{oznaka}_ROBA_{broj-pohrane}_{GGGGMMDD}_{SSMM}.csv
+//   npr. 02359254184_PRODAVAONICA_Grabi_54_23241_Policnik_T003_ROBA_000021_20261123_1200.csv
+// Unutar dijela razmaci i nedopušteni znakovi postaju podvlaka, slova bez kvačica.
 
 function ascii(text) {
   return String(text)
@@ -111,14 +117,15 @@ function ascii(text) {
 
 function dioNaziva(text) {
   return ascii(text)
-    .replace(/[^A-Za-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+    .replace(/[^A-Za-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
 }
 
 export function nazivDatoteke({ broj, date, env = process.env }) {
   const p = poslovnica(env);
   const brojPohrane = p.brojPohrane || String(broj).padStart(6, "0");
-  return [p.vrsta, p.address, p.code, brojPohrane].map(dioNaziva).join("_") + `_${zagrebStamp(date)}.csv`;
+  const dijelovi = [p.oib, p.vrsta.toUpperCase(), p.address, p.code, "ROBA", brojPohrane].map(dioNaziva);
+  return `${dijelovi.join("_")}_${zagrebStamp(date)}.csv`;
 }
 
 // ---------------------------------------------------------------------------
@@ -148,32 +155,44 @@ function cijena(n) {
   return n === null ? "" : n.toFixed(2);
 }
 
-function daNe(value) {
-  if (typeof value === "boolean") return value;
-  if (typeof value === "number") return value !== 0;
-  const text = String(value ?? "").trim().toLowerCase();
-  if (["true", "da", "1", "yes"].includes(text)) return true;
-  if (["false", "ne", "0", "no"].includes(text)) return false;
-  return null;
-}
-
+// VENIO šifre jedinica -> oznaka u CSV-u (velika slova, kao diMaris).
 const JEDINICE = {
-  kg: "kg",
-  kgr: "kg",
-  l: "l",
-  lit: "l",
-  ltr: "l",
-  kom: "kom",
-  ko: "kom",
-  kos: "kom",
-  pce: "kom",
-  kut: "kut",
-  pak: "pak",
+  kg: "KG",
+  kgr: "KG",
+  l: "L",
+  lit: "L",
+  ltr: "L",
+  kom: "KOM",
+  ko: "KOM",
+  kos: "KOM",
+  pce: "KOM",
+  kut: "KUT",
+  pak: "PAK",
 };
 
 function jedinica(code) {
   const key = String(code ?? "").trim().toLowerCase().replace(/\.$/, "");
-  return JEDINICE[key] || key;
+  return JEDINICE[key] || key.toUpperCase();
+}
+
+function kolicina(n) {
+  return n === null ? "" : n.toFixed(3);
+}
+
+// Ispravan EAN-13 (kontrolna znamenka) izvan internog raspona 20 do 29 ide u
+// stupac ean_barkod; interni (20 do 29) i neispravni ostaju u stupcu barkod.
+function jeEan13(kod) {
+  if (!/^\d{13}$/.test(kod)) return false;
+  const z = [...kod].map(Number);
+  const zbroj = z.slice(0, 12).reduce((acc, d, i) => acc + d * (i % 2 ? 3 : 1), 0);
+  return (10 - (zbroj % 10)) % 10 === z[12];
+}
+
+export function podijeliBarkod(kod) {
+  const k = String(kod ?? "").trim();
+  if (!k) return { barkod: "", ean_barkod: "" };
+  const interni = /^2\d/.test(k);
+  return jeEan13(k) && !interni ? { barkod: "", ean_barkod: k } : { barkod: k, ean_barkod: "" };
 }
 
 // Pronađi stavke grupe u kojoj je skladište T003.
@@ -203,38 +222,51 @@ export function mapirajStavku(stavka) {
   const upozorenja = [];
   const sifra = String(pick(stavka, "ArtiklSifra") ?? "").trim();
   const naziv = String(pick(stavka, "ArtiklNaziv") ?? "").trim();
-  const jm = jedinica(pick(stavka, "JedinicaMjereSifra", "JedinicaMjere"));
+  const jmVenio = jedinica(pick(stavka, "JedinicaMjereSifra", "JedinicaMjere"));
   const redovna = broj(pick(stavka, "Cijena"));
   const akcijska = broj(pick(stavka, "AkcijskaCijena"));
   const akcija = akcijska !== null && akcijska > 0;
-  const mpc = akcija ? akcijska : redovna;
-  const sidrena = broj(pick(stavka, "SidrenaCijena"));
-  const dostupno = daNe(pick(stavka, "Dostupno"));
+  const bazna = broj(pick(stavka, "SidrenaCijena"));
   const brandSirovo = String(pick(stavka, "Brand") ?? "").trim();
   // VENIO za artikle bez marke šalje "NIJE RELEVANTNO"; to nije marka.
   const brand = /^nije relevantno$/i.test(brandSirovo) ? "" : brandSirovo;
-  // VENIO (izvan dokumentacije v1.4) ponekad šalje gotovu cijenu za jedinicu mjere.
+  // VENIO ponekad šalje gotovu cijenu za jedinicu mjere (postavlja se ručno u ERP-u).
   const venioCijenaJm = broj(pick(stavka, "CijenaPoJediniciMjere"));
+  // Količina osnovne jedinice (kg ili l) u jednoj prodajnoj jedinici: 1 za robu na
+  // kg/l, 0.14 za staklenku od 140 g, 0.75 za bocu od 0,75 l. Nema je ako nije upisana.
+  const tezinaSirovo = broj(pick(stavka, "TezinaPoOsnovnojJM"));
+  const tezina = tezinaSirovo !== null && tezinaSirovo > 0 ? tezinaSirovo : null;
+
+  // VENIO šalje akcijsku cijenu po osnovnoj jedinici (kg ili l), a redovnu po prodajnoj
+  // jedinici (npr. 13013 staklenka 140 g: redovna 5.76, akcijska 32.50 = €/kg).
+  // Za pakiranu robu cijena komada na akciji je zato akcijska × težina (32.50 × 0.14 = 4.55).
+  const pakirano = tezina !== null && tezina !== 1;
+  const mpc = akcija ? (pakirano ? Math.round(akcijska * tezina * 100) / 100 : akcijska) : redovna;
 
   const greske = [];
   if (!sifra) greske.push("nema šifre");
   if (!naziv) greske.push("nema naziva");
   if (mpc === null || mpc <= 0) greske.push("nema cijene");
-  if (dostupno === null) greske.push("nema dostupnosti");
 
-  // Cijena za jedinicu mjere: za artikle na kg ili l jednaka je cijeni.
-  // Za komadne artikle treba neto masa pakiranja, koju API (za sada) ne daje.
-  let cijenaJm = "";
-  if (venioCijenaJm !== null && venioCijenaJm > 0) {
-    cijenaJm = cijena(venioCijenaJm);
-  } else if (mpc !== null && (jm === "kg" || jm === "l")) {
-    cijenaJm = cijena(mpc);
-  } else if (!akcija) {
-    upozorenja.push("cijena_za_jedinicu_mjere");
+  // Roba na vagu (kg ili l, cijena već po jedinici): neto količina prazna, cijena za JM = MPC.
+  // Pakirano (komad, pakiranje, boca): neto količina iz VENIO-a, cijena za JM = MPC / neto.
+  // Kao diMaris: za pakiranu robu jedinica mjere je osnovna (KG), za vino L.
+  const naVagu = (jmVenio === "KG" || jmVenio === "L") && (tezina === null || tezina === 1);
+  let jm = jmVenio;
+  let neto = null;
+  let cijenaJm = null;
+  if (naVagu) {
+    cijenaJm = mpc;
+  } else if (tezina !== null) {
+    jm = jmVenio === "L" ? "L" : "KG";
+    neto = tezina;
+    cijenaJm = akcija ? akcijska : mpc !== null ? mpc / tezina : null;
   }
-  if (sidrena === null) upozorenja.push("sidrena_cijena");
-  if (!jm) upozorenja.push("jedinica_mjere");
+  if (venioCijenaJm !== null && venioCijenaJm > 0) cijenaJm = venioCijenaJm;
 
+  if (cijenaJm === null) upozorenja.push("cijena_za_jedinicu_mjere");
+  if (bazna === null) upozorenja.push("bazna_cijena");
+  if (!jm) upozorenja.push("jedinica_mjere");
   if (!brand) upozorenja.push("marka");
 
   // Marka se ne izmišlja: ako je VENIO ne pošalje, ostaje prazna.
@@ -242,14 +274,13 @@ export function mapirajStavku(stavka) {
     naziv,
     sifra,
     marka: brand,
+    neto_kolicina: kolicina(neto),
     jedinica_mjere: jm,
-    cijena_za_jedinicu_mjere: cijenaJm,
     maloprodajna_cijena: cijena(mpc),
     posebni_oblik_prodaje: akcija ? "DA" : "NE",
-    naziv_posebnog_oblika_prodaje: akcija ? "Akcija" : "",
-    sidrena_cijena: cijena(sidrena),
-    barkod: String(pick(stavka, "ArtiklBarkod") ?? "").trim(),
-    dostupnost: dostupno ? "DOSTUPNO" : "NEDOSTUPNO",
+    cijena_za_jedinicu_mjere: cijena(cijenaJm),
+    ...podijeliBarkod(pick(stavka, "ArtiklBarkod")),
+    bazna_cijena: cijena(bazna),
   };
 
   return { red, greske, upozorenja };
@@ -292,7 +323,7 @@ export function pripremiCjenik(json) {
 
 function csvPolje(value) {
   const text = String(value ?? "");
-  return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+  return /[";\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 
 export function uCsv(redovi) {
