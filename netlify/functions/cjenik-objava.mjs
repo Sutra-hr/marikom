@@ -1,4 +1,4 @@
-// Javna stranica s cjenicima (Odluka o objavi cjenika, NN 101/26).
+// Javna stranica s cjenicima (Pravilnik o načinu objave cjenika, NN 132/2026).
 // Slaže se na poslužitelju kao običan HTML s poveznicama na CSV datoteke,
 // tako da je i robotima koji ne pokreću JavaScript sve vidljivo i dohvatljivo.
 // Na stranicu ne vodi nijedna poveznica s weba (dogovor: cjenik nije za posjetitelje).
@@ -83,7 +83,7 @@ export function renderPage({ poslovnica, latest, archive }, generatedAt = new Da
   <main>
     <p><a href="/">← marikomerc.hr</a></p>
     <h1>Objava cjenika</h1>
-    <p>Cjenik se objavljuje svaki dan u CSV formatu, u skladu s Odlukom o objavi cjenika proizvoda i usluga (NN 101/26). Prethodni cjenici dostupni su u arhivi 30 dana.</p>
+    <p>Cjenik se objavljuje svaki dan u CSV formatu, u skladu s Pravilnikom o načinu objave cjenika (NN 132/2026). Prethodni cjenici dostupni su u arhivi 30 dana.</p>
     <p>Popis svih cjenika za strojnu obradu: <a href="/cjenici/popis.json">/cjenici/popis.json</a> (JSON).</p>
     <section id="${escapeHtml(poslovnica.code)}">
       <h2>${escapeHtml(poslovnica.name)}</h2>

@@ -4,7 +4,7 @@ const Sitemap = () => {};
 
 export const getServerSideProps = async ({ res }) => {
   const baseUrl = "https://marikomerc.hr";
-  // Cjenik (NN 101/26) se objavljuje svaki dan; stranica za robote nema poveznica sa weba,
+  // Cjenik (NN 132/2026) se objavljuje svaki dan; stranica za robote nema poveznica sa weba,
   // pa je sitemap jedini put kojim je tražilice nađu.
   const danas = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Zagreb" }).format(new Date());
 
